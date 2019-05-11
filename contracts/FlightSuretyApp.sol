@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.2;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -16,6 +16,8 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    FlightSuretyData dataContract;
+
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
@@ -24,17 +26,21 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    // Constants
+    uint8 private constant MIN_AIRLINE_TO_ACTIVATE_CONSENSUS = 4;
+
     address private contractOwner;          // Account used to deploy contract
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
 
- 
+    // store the number of calls from other airlines
+    struct AirlineConsensus {
+        bool isApproved;
+        address[] calls;
+    }
+
+    bool private operational = true; // Blocks all state changes throughout the contract if false
+    mapping(address => AirlineConsensus) private registerConsensus; // Store the consensus info
+    uint private numberOfRequiredConsensus; // Store the number of required consensus, which get updated everytime an airline is registered
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -63,6 +69,7 @@ contract FlightSuretyApp {
         _;
     }
 
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -71,24 +78,20 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor
-                                (
-                                ) 
-                                public 
-    {
+    constructor(address _dataAddress) public {
         contractOwner = msg.sender;
+        dataContract = FlightSuretyData(_dataAddress);
+        // !important, on first deploy we need to make sure this number get updated
+        // always include this during contract update to prevent bugs in multi party consensus
+        updateNumberOfRequiredConsensus();
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() 
-                            public 
-                            pure 
-                            returns(bool) 
-    {
-        return true;  // Modify to call data contract's status
+    function isOperational() public view returns(bool) {
+        return operational;  // Modify to call data contract's status
     }
 
     /********************************************************************************************/
@@ -98,30 +101,74 @@ contract FlightSuretyApp {
   
    /**
     * @dev Add an airline to the registration queue
-    *
-    */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            pure
-                            returns(bool success, uint256 votes)
+    * For the first 4 airlines, it will be automatically registered
+    * For the subsequent airline, it will need a 50% consensus
+    */
+    function registerAirline(address _airlineAddress, string calldata _airlineName) external returns(bool success, uint256 votes)
     {
-        return (success, 0);
+        uint airlineStatus = dataContract.getAirlineStatus(_airlineAddress);
+        if (airlineStatus != 0) {
+            // register airline with WaitingConsensus status
+            dataContract.registerAirline(_airlineAddress, _airlineName);
+        }
+        uint numberOfRegisteredAirline = dataContract.getNumberOfRegisteredAirline();
+        // if minimum hasnt been achieved, update status to registered immediately
+        if (numberOfRegisteredAirline <= MIN_AIRLINE_TO_ACTIVATE_CONSENSUS) {
+            dataContract.updateAirlineStatusToRegistered(_airlineAddress);
+            return (true, numberOfRegisteredAirline);
+        }
+
+        require(registerConsensus[_airlineAddress].isApproved == false, "This airline is already approved");
+        // prevent same user calling twice
+        bool isDuplicate = false;
+        for(uint c = 0; c < registerConsensus[_airlineAddress].calls.length; c++) {
+            if (registerConsensus[_airlineAddress].calls[c] == msg.sender) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        require(!isDuplicate, "Caller has already called this function.");
+
+        registerConsensus[_airlineAddress].calls.push(msg.sender);
+        if (registerConsensus[_airlineAddress].calls.length >= numberOfRequiredConsensus) {
+            registerConsensus[_airlineAddress].isApproved = true;
+            dataContract.updateAirlineStatusToRegistered(_airlineAddress);
+            // below function is important to ensure the number is updated after registration!
+            updateNumberOfRequiredConsensus();
+            return (true, registerConsensus[_airlineAddress].calls.length);
+        }
+
+        return (true, registerConsensus[_airlineAddress].calls.length);
+    }
+
+    /**
+    * @dev Update the number of required consensus. This function should be called after a registration.
+    */
+    function updateNumberOfRequiredConsensus() private {
+        // number of required consensus is set to 50% of the number of registered airline
+        uint numberOfRegisteredAirline = dataContract.getNumberOfRegisteredAirline();
+
+        uint quotient = numberOfRegisteredAirline.div(2);
+        uint remainder = numberOfRegisteredAirline - quotient.mul(2);
+        // if there is a remainder we should round up to get above 50%
+        if (remainder > 0) {
+            numberOfRequiredConsensus = quotient + 1;
+        } else {
+            numberOfRequiredConsensus = quotient;
+        }
     }
 
 
    /**
     * @dev Register a future flight for insuring.
     *
-    */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                pure
-    {
+    */
+    function registerFlight(string calldata _flightNumber, uint256 _timestamp) external {
+        // check if the caller is one of the registered airline
+        bool isCallerRegistered = dataContract.isAirlineRegistered(msg.sender);
+        require (isCallerRegistered == true, "You are not registered");
 
+        dataContract.registerFlight(_flightNumber, msg.sender, _timestamp);
     }
     
    /**
@@ -142,14 +189,7 @@ contract FlightSuretyApp {
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus
-                        (
-                            address airline,
-                            string flight,
-                            uint256 timestamp                            
-                        )
-                        external
-    {
+    function fetchFlightStatus(address airline, string calldata flight,uint256 timestamp) external {
         uint8 index = getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
@@ -225,12 +265,7 @@ contract FlightSuretyApp {
                                     });
     }
 
-    function getMyIndexes
-                            (
-                            )
-                            view
-                            external
-                            returns(uint8[3])
+    function getMyIndexes() external view returns(uint8[3] memory)
     {
         require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
@@ -244,11 +279,10 @@ contract FlightSuretyApp {
     // For the response to be accepted, there must be a pending request that is open
     // and matches one of the three Indexes randomly assigned to the oracle at the
     // time of registration (i.e. uninvited oracles are not welcome)
-    function submitOracleResponse
-                        (
+    function submitOracleResponse(
                             uint8 index,
                             address airline,
-                            string flight,
+                            string calldata flight,
                             uint256 timestamp,
                             uint8 statusCode
                         )
@@ -278,7 +312,7 @@ contract FlightSuretyApp {
     function getFlightKey
                         (
                             address airline,
-                            string flight,
+                            string memory flight,
                             uint256 timestamp
                         )
                         pure
@@ -294,7 +328,7 @@ contract FlightSuretyApp {
                                 address account         
                             )
                             internal
-                            returns(uint8[3])
+                            returns(uint8[3] memory)
     {
         uint8[3] memory indexes;
         indexes[0] = getRandomIndex(account);
@@ -334,4 +368,13 @@ contract FlightSuretyApp {
 
 // endregion
 
-}   
+}
+
+contract FlightSuretyData {
+    function isAirlineRegistered(address _airlineAddress) public view returns(bool) {}
+    function getNumberOfRegisteredAirline() public view returns(uint) {}
+    function registerAirline(address _airlineAddress, string calldata _airlineName) external {}
+    function updateAirlineStatusToRegistered(address _airlineAddress) external {}
+    function getAirlineStatus(address _airlineAddress) external view returns (uint _status) {}
+    function registerFlight(string calldata _flightNumber, address _airline, uint256 _timestamp) external {}
+}
