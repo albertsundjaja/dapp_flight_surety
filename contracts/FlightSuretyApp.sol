@@ -86,7 +86,7 @@ contract FlightSuretyApp {
         updateNumberOfRequiredConsensus();
     }
 
-    /********************************************************************************************/
+    /******************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
@@ -104,8 +104,11 @@ contract FlightSuretyApp {
     * For the first 4 airlines, it will be automatically registered
     * For the subsequent airline, it will need a 50% consensus
     */
-    function registerAirline(address _airlineAddress, string calldata _airlineName) external returns(bool success, uint256 votes)
+    function registerAirline(address _airlineAddress, string calldata _airlineName) external returns(bool _success, uint256 _votes)
     {
+        require(dataContract.isAirlineActive(msg.sender) == true,
+         "You are not yet activated");
+
         uint airlineStatus = dataContract.getAirlineStatus(_airlineAddress);
         if (airlineStatus != 0) {
             // register airline with WaitingConsensus status
@@ -113,11 +116,14 @@ contract FlightSuretyApp {
         }
         uint numberOfRegisteredAirline = dataContract.getNumberOfRegisteredAirline();
         // if minimum hasnt been achieved, update status to registered immediately
-        if (numberOfRegisteredAirline <= MIN_AIRLINE_TO_ACTIVATE_CONSENSUS) {
+        if (numberOfRegisteredAirline < MIN_AIRLINE_TO_ACTIVATE_CONSENSUS) {
             dataContract.updateAirlineStatusToRegistered(_airlineAddress);
+            // below function is important to ensure the number is updated after registration!
+            updateNumberOfRequiredConsensus();
             return (true, numberOfRegisteredAirline);
         }
 
+        // check whether this airline is already listed before
         require(registerConsensus[_airlineAddress].isApproved == false, "This airline is already approved");
         // prevent same user calling twice
         bool isDuplicate = false;
@@ -137,7 +143,6 @@ contract FlightSuretyApp {
             updateNumberOfRequiredConsensus();
             return (true, registerConsensus[_airlineAddress].calls.length);
         }
-
         return (true, registerConsensus[_airlineAddress].calls.length);
     }
 
@@ -372,6 +377,7 @@ contract FlightSuretyApp {
 
 contract FlightSuretyData {
     function isAirlineRegistered(address _airlineAddress) public view returns(bool) {}
+    function isAirlineActive(address _airlineAddress) public view returns(bool) {}
     function getNumberOfRegisteredAirline() public view returns(uint) {}
     function registerAirline(address _airlineAddress, string calldata _airlineName) external {}
     function updateAirlineStatusToRegistered(address _airlineAddress) external {}

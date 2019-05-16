@@ -33,7 +33,7 @@ contract FlightSuretyData {
     mapping(address => bool) private allowedContracts; // Store allowed contract to call this contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
     mapping(address => AirlineInfo) private airlines; // Store airlines whether they are registered/have paid the fee
-    uint numberOfRegisteredAirline = 0; // Store how many airlines are currently registered
+    uint numberOfRegisteredAirline = 1; // Store how many airlines are currently registered, first airline registerd during deployment
     mapping(string => Flight) private flights; // Store passenger's wallet for the given flight insurance
     mapping(address => PassengerInfo) private passengers; // Store detail of passenger who bought insurance
     mapping(address => uint) private payouts; // Payouts amount for passenger
@@ -49,13 +49,16 @@ contract FlightSuretyData {
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
+            First airline will be registered
     */
-    constructor
-                                (
-                                ) 
-                                public 
-    {
+    constructor(address _firstAirlineAddress, string memory _firstAirlineName) public {
         contractOwner = msg.sender;
+
+        // register first airline when contract deployed
+        AirlineInfo memory info;
+        info.name = _firstAirlineName;
+        info.status = AirlineStatus.Registered;
+        airlines[_firstAirlineAddress] = info;
     }
 
     /********************************************************************************************/
@@ -174,7 +177,7 @@ contract FlightSuretyData {
     * @dev Pay ante to be activated
     */
     function payAnte() public payable {
-        require(airlines[msg.sender].status == AirlineStatus.Registered, "Airline is not yet registered");
+        require(airlines[msg.sender].status == AirlineStatus.Registered, "Airline is not yet registered or already paid");
         require(msg.value == 10 ether, "Ante should be 10 ether");
         // change status of the airline to active
         airlines[msg.sender].status = AirlineStatus.Active;
@@ -182,18 +185,42 @@ contract FlightSuretyData {
 
     /**
     * @dev get the status of an airline address
-    *
+    * 
     */
     function getAirlineStatus(address _airlineAddress) external view returns (uint _status) {
         _status = uint(airlines[_airlineAddress].status);
     }
 
     /**
+    * @dev check if airline address is listed
+    * AirlineStatus.WaitingConsensus or AirlineStatus.Registered or AirlineStatus.Active
+    */
+    function isAirlineListed(address _airlineAddress) external view returns (bool) {
+        if (airlines[_airlineAddress].status != AirlineStatus.Unregistered) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
     * @dev check if airline address is registered
-    *
+    * AirlineStatus.Registered
     */
     function isAirlineRegistered(address _airlineAddress) external view returns (bool) {
         if (airlines[_airlineAddress].status == AirlineStatus.Registered) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+     /**
+    * @dev check if airline address is active
+    * AirlineStatus.Active
+    */
+    function isAirlineActive(address _airlineAddress) external view returns (bool) {
+        if (airlines[_airlineAddress].status == AirlineStatus.Active) {
             return true;
         } else {
             return false;
