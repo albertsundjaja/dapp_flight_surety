@@ -187,7 +187,21 @@ contract('Flight Surety Tests', async (accounts) => {
     result = await config.flightSuretyData.isAirlineRegistered(newAirline6);
     assert.equal(result, true, "With 3 votes, the airline should pass the registration process");
   });
+
+  it('can register a flight', async () => {
+    const flightNumber = "Test123";
+    await config.flightSuretyApp.registerFlight(flightNumber, (new Date).getTime(), {from:config.firstAirline});
+    let result = await config.flightSuretyData.getFlight(flightNumber);
+    assert(result['_active'], true, "Flight should be registered");
+  });
   
+  it('allows passenger to buy insurance', async () => {
+    let passenger = accounts[6];
+    const flightNumber = "Test123";
+    await config.flightSuretyApp.buyInsurance(flightNumber, {from:passenger, value:1000});
+    let result = await config.flightSuretyData.checkInsurance(flightNumber, {from:passenger});
+    assert(result, 1000, "Insurance bought must be equal to 1000 in value");
+  });
 
   
 });

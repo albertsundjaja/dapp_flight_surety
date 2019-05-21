@@ -36,6 +36,8 @@ To install, download or clone the repo, then:
 `npm install`
 `truffle compile`
 
+1. change the first airline address `inside 2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick one of the accounts)
+
 ## Develop Client
 
 To run truffle tests:

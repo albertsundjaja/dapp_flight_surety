@@ -98,6 +98,13 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    /*
+    function buyInsurance(string memory _flight) public payable {
+        require (msg.value > 0, "Amount must be greater than zero");
+        require (msg.value <= 1 ether, "Amount must not exceed 1 ether");
+
+        dataContract.buy.value(msg.value)(_flight, msg.sender);
+    } */
   
    /**
     * @dev Add an airline to the registration queue
@@ -170,26 +177,21 @@ contract FlightSuretyApp {
     */
     function registerFlight(string calldata _flightNumber, uint256 _timestamp) external {
         // check if the caller is one of the registered airline
-        bool isCallerRegistered = dataContract.isAirlineRegistered(msg.sender);
-        require (isCallerRegistered == true, "You are not registered");
+        bool isCallerRegistered = dataContract.isAirlineActive(msg.sender);
+        require (isCallerRegistered == true, "You are not active");
 
         dataContract.registerFlight(_flightNumber, msg.sender, _timestamp);
     }
     
    /**
-    * @dev Called after oracle has updated flight status
+    * @dev Called after oracle has updated flight status, credit insurees if flight is late airline
     *
     */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                pure
-    {
+    function processFlightStatus (address airline, string memory flight,
+                                    uint256 timestamp, uint8 statusCode) internal {
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            dataContract.creditInsurees(flight);
+        }
     }
 
 
@@ -308,6 +310,9 @@ contract FlightSuretyApp {
 
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
+            // mark the flight request as closed when number of responses are met
+            oracleResponses[key].isOpen = false;
+
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
         }
@@ -383,4 +388,6 @@ contract FlightSuretyData {
     function updateAirlineStatusToRegistered(address _airlineAddress) external {}
     function getAirlineStatus(address _airlineAddress) external view returns (uint _status) {}
     function registerFlight(string calldata _flightNumber, address _airline, uint256 _timestamp) external {}
+    function creditInsurees(string calldata _flightNumber) external {}
+    function buy(string calldata _flightNumber, address _buyerAddress) external payable {}
 }

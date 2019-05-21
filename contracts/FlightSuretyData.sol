@@ -242,6 +242,19 @@ contract FlightSuretyData {
         flights[_flightNumber].updatedTimestamp = _timestamp;
     }
 
+    /**
+    * @dev get flight info
+    *
+    */
+    function getFlight(string memory _flightNumber) public view returns(bool _active,
+         bool _isRegistered, address _airline, uint256 _timestamp) {
+
+        _active = flights[_flightNumber].active;
+        _isRegistered = flights[_flightNumber].isRegistered;
+        _airline = flights[_flightNumber].airline;
+        _timestamp = flights[_flightNumber].updatedTimestamp;
+    }
+
    /**
     * @dev Buy insurance for a flight
     *
@@ -256,6 +269,14 @@ contract FlightSuretyData {
         flights[_flightNumber].addressList.push(msg.sender);
         // update this passenger insurance bought
         passengers[msg.sender].insuranceBought[_flightNumber] = msg.value;
+    }
+
+     /**
+    * @dev Check insurance detail
+    *
+    */   
+    function checkInsurance(string memory _flightNumber) public view returns(uint256 _amount) {
+        return passengers[msg.sender].insuranceBought[_flightNumber];
     }
 
     /**
@@ -281,7 +302,6 @@ contract FlightSuretyData {
     */
     function pay() external {
         require(payouts[msg.sender] > 0, "Balance is zero");
-        
         uint amount = payouts[msg.sender];
         payouts[msg.sender] = 0;
         msg.sender.transfer(amount);
