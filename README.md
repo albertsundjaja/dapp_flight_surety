@@ -35,9 +35,10 @@ Web3.js v1.0.0-beta.37
 
 This repository contains Smart Contract code in Solidity (using Truffle), tests (also using Truffle), dApp scaffolding (using HTML, CSS and JS) and server app scaffolding.
 
-To install, download or clone the repo, then:
-
-`npm install`
+To install, download or clone the repo, then install dependency:
+```
+$ npm install
+```
 
 1. run `ganache`. by default, the server will assume ganache is running on `port 8545`
 
@@ -45,17 +46,23 @@ To install, download or clone the repo, then:
 
 3. deploy into ganache
 
-`truffle migrate --reset`
+```
+$ truffle migrate --reset
+```
 
 **note** everytime you redeploy, remember to delete the `build` folder to avoid conflict
 
 4. run the server, and wait until oracle registration completed
 
-`npm run server`
+```
+$ npm run server
+```
 
 5. run the dapp, it can then be viewed using your browser at `http://localhost:8000`
 
-`npm run dapp`
+```
+$ npm run dapp
+```
 
 6. Flights are hardcoded. Flight with flight number `ABC123` is the one who is set to be Late Airline fault. Insurance will be credited towards the passenger. To test out the insurance payout, buy insurance for this flight, and then click `Submit to Oracle (fetch flight status)`. Then click withdraw to get the payouts, you can check that the balance in ganace, it should increase by 1.5x the original insurance.
 
@@ -63,5 +70,7 @@ To install, download or clone the repo, then:
 
 To run truffle tests:
 
-`truffle test ./test/flightSurety.js`
-`truffle test ./test/oracles.js`
+```
+$ truffle test ./test/flightSurety.js
+$ truffle test ./test/oracles.js
+```
