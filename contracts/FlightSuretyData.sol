@@ -280,6 +280,14 @@ contract FlightSuretyData {
     }
 
     /**
+    * @dev Check payouts
+    *
+    */   
+    function checkPayouts() public view returns(uint256 _amount) {
+        return payouts[msg.sender];
+    }
+
+    /**
      *  @dev Credits payouts to insuree
      * WARNING there is a for loop in this function
     */

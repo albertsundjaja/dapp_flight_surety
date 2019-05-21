@@ -22,18 +22,18 @@
 3. Ideally, when there is a flight status update, our own app server (or 3rd party api or another oracles) will call the smart contract to trigger a function that emit event to the oracles. The oracles will then fetch data and return data to the smart contract. However, since we don't have the mean to check the required flight info, the trigger will be a button in the front-end client dapp.
 4. The server (which simulates 20 oracles) will pick oracles which have been chosen by the smart contract, these oracles will response with random status code of Unknown (0), On Time (10) or Late Airline (20), Late Weather (30), Late Technical (40), or Late Other (50)
 
-## Architecture
 
-
-
-
-## Install
+## Installation
 
 This repository contains Smart Contract code in Solidity (using Truffle), tests (also using Truffle), dApp scaffolding (using HTML, CSS and JS) and server app scaffolding.
 
 To install, download or clone the repo, then:
 
 `npm install`
+
+1. run `ganache`. by default, the server will assume ganache is running on `port 8545`
+
+
 `truffle compile`
 
 1. change the first airline address `inside 2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick one of the accounts)

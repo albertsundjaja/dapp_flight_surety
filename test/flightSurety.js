@@ -198,10 +198,22 @@ contract('Flight Surety Tests', async (accounts) => {
   it('allows passenger to buy insurance', async () => {
     let passenger = accounts[6];
     const flightNumber = "Test123";
-    await config.flightSuretyApp.buyInsurance(flightNumber, {from:passenger, value:1000});
+    await config.flightSuretyData.buy(flightNumber, {from:passenger, value:1000});
     let result = await config.flightSuretyData.checkInsurance(flightNumber, {from:passenger});
     assert(result, 1000, "Insurance bought must be equal to 1000 in value");
   });
 
+  /* for testing this, we need to change processFlightStatus in data contract to public */
+  /*
+  it('credit insurees when flight is late - airline', async () => {
+    let passenger = accounts[6];
+    const flightNumber = "Test123";
+    let amountPassengerBought = await config.flightSuretyData.checkInsurance(flightNumber, {from:passenger});
+    assert(amountPassengerBought, 1000, "Insurance bought should be equal to 1000 in value");
+    await config.flightSuretyApp.processFlightStatus(config.firstAirline, flightNumber, 1000, 20);
+    let payouts = await config.flightSuretyData.checkPayouts({from:passenger});
+    assert(payouts, 1500, "Payouts should be 1500");
+  });
+  */
   
 });

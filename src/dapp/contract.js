@@ -14,7 +14,6 @@ export default class Contract {
         this.owner = null;
         this.airlines = [];
         this.passengers = [];
-        this.startRun = true;
     }
 
     initialize(callback) {
@@ -56,10 +55,36 @@ export default class Contract {
     buyInsurance(flight, amount, callback) {
         let self = this;
         let amountInt = parseInt(amount);
-        self.flightSuretyData.methods.buy(flight, this.owner)
-            .send({from:self.owner, value:amountInt, gasLimit: "4600000"}).catch((err) => {
+        self.flightSuretyData.methods.buy(flight)
+            .send({from:self.owner, value:amountInt, gasLimit: "4600000"})
+            .then((res) => {
+                callback(null, "Insurance bought")
+            })
+            .catch((err) => {
                 console.log(err)
                 callback(err, "");
             });
     }
+
+    withdraw(callback) {
+        let self = this;
+        self.flightSuretyData.methods.checkInsurance('ABC123').call({from:self.owner})
+        .then((res) => {
+            console.log(res);
+        })
+        self.flightSuretyData.methods.checkPayouts().call({from:self.owner})
+        .then((res) => {
+            console.log(res);
+        })
+        self.flightSuretyData.methods.pay()
+            .send({from:self.owner, gasLimit: "4600000"})
+            .then((res) => {
+                callback(null, "Withdraw success")
+            })
+            .catch((err) => {
+                console.log(err)
+                callback(err, null);
+            });
+    }
+
 }

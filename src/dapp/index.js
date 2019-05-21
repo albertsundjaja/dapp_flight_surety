@@ -8,15 +8,12 @@ let allFlights = [];
 
 // search for flight inside the array
 function searchFlight(flights, flightNumber) {
-    for(var i = 0; i < flights.length; i++)
-    {
+    for(var i = 0; i < flights.length; i++) {
       if(flights[i].flight == flightNumber) {
         return flights[i]
       }
-      else {
-        return null
-      }
     }
+    return null;
 }
 
 (async() => {
@@ -51,20 +48,21 @@ function searchFlight(flights, flightNumber) {
             let flight = DOM.elid('buy-flight-number').value;
             let amount = DOM.elid('buy-amount').value;
             contract.buyInsurance(flight, amount, (err, result) => {
-                display('FlightSuretyApp', 'Buy Insurance', [ { label: 'Buy Insurance', error: err, value: ""} ]);
+                display('FlightSuretyApp', 'Buy Insurance', [ { label: 'Buy Insurance', error: err, value: result} ]);
             });
         })
 
         // Withdraw
-        DOM.elid('withdraw-btn').addEventListener('clickk', () => {
+        DOM.elid('withdraw-btn').addEventListener('click', () => {
             contract.withdraw((err, result) => {
                 if (err) {
-                    display('FlightSuretyApp', 'Withdraw Payment', [ { label: 'Withdraw', error: err, value: ""} ]);
+                    display('FlightSuretyApp', 'Withdraw Payment', [ { label: 'Withdraw', error: err, value: result} ]);
                 } else {
-                    display('FlightSuretyApp', 'Withdraw Payment', [ { label: 'Withdraw', error: "", value: ""} ]);
+                    display('FlightSuretyApp', 'Withdraw Payment', [ { label: 'Withdraw', error: err, value: result} ]);
                 }
             })
         })
+
         
         // subscribe to event
         contract.web3.eth.getBlockNumber().then((blockNumber) => {
@@ -72,8 +70,14 @@ function searchFlight(flights, flightNumber) {
                 fromBlock: blockNumber
               }, function (error, event) {
                 if (error) console.log(error)
-            
-                console.log(event);
+                let status = event['returnValues']['status'];
+                if (status === "20") {
+                    status = "Status 20. Flight is late. Insurance will be paid out"
+                } else {
+                    status = "Status " + event['returnValues']['status'].toString() + ". Insurance will not be paid out";
+                }
+                let flightInfo = event['returnValues']['flight'] + " " + status;
+                display('FlightSuretyApp', 'Flight Info Received', [ { label: 'Flight Status', error: error, value: flightInfo} ]);
               });
             
         })
@@ -98,12 +102,11 @@ async function populateSelectFlight() {
     let flightSelect = document.getElementById('buy-flight-number');
     let flightsReq = await fetchFlight();
     let flights = flightsReq.data.flights;
-    console.log(flights);
     // store in global array
-    allFlights = flights;
+    allFlights = allFlights.concat(flights);
     for(var i = 0; i < flights.length; i++) {
         var option1 = document.createElement("option");
-        option1.text = flights[i]['flight'];
+        option1.text = flights[i]['flight'] + " status " + flights[i]['flightStatus'];
         option1.value = flights[i]['flight'];
 
         var option2 = document.createElement("option");

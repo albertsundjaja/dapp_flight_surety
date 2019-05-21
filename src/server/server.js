@@ -17,10 +17,8 @@ function searchFlight(flights, flightNumber) {
     if(flights[i].flight == flightNumber) {
       return flights[i]
     }
-    else {
-      return null
-    }
   }
+  return null
 }
 
 // simulate an oracle
@@ -35,21 +33,20 @@ class Oracle {
     }
   }
 
-  generateFlightInfo = (index, airline, flightNumber) => {
+  generateFlightInfo = (index, airline, flightNumber, flights) => {
     if (this.state.indices.includes(index)) {
       let flightDetail = searchFlight(flights, flightNumber);
-      console.log('flight detail', flightDetail);
-      console.log('this oracle address', this.state.address);
       if (flightDetail) {
         flightSuretyApp.methods.submitOracleResponse(index, airline, flightNumber, flightDetail['timestamp'],
-          flightDetail['flightStatus']).send({from:this.state.address});
+          flightDetail['flightStatus']).send({from:this.state.address, gasLimit: "4600000"}).catch((err) => {
+            console.log(err);
+          });
         console.log("Oracle " + this.state.address + " responding " + flightDetail['flightStatus']);
       }
     }
   }
 
 }
-
 
 const STATUS_CODE_UNKNOWN = 0;
 const STATUS_CODE_ON_TIME = 10;
@@ -93,28 +90,6 @@ web3.eth.defaultAccount = web3.eth.accounts[0];
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
 let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
 
-/* First run only
-* comment out this block after first run
-*/
-/*
-console.log("Registering oracles");
-console.log(web3.eth.accounts);
-web3.eth.getAccounts().then(async (accounts) => {
-  console.log(accounts[0]);
-  web3.eth.getAccounts().then(async (acc) => {
-    console.log(accounts[0]);
-    flightSuretyApp.methods.getMyIndexes().call({from:accounts[1]}).then((indices) =>{
-      console.log("accounts i ", accounts[1]);
-      let newOracle = new Oracle(accounts[1]);
-      newOracle.state.indices = indices;
-      oracles.push(newOracle);
-    })
-    .catch((err => {
-      console.log(err);
-    }))
-  });
-});
-*/
 web3.eth.getAccounts().then(async (accounts) => {
   // register 20 oracles and push to list of oracles
   for (var i = 0; i < 20; i++) {
@@ -156,28 +131,17 @@ web3.eth.getAccounts().then(async (accounts) => {
       });
     }
   }).catch((err) => {
-    console.log('is active');
     console.log(err);
   })
 
   // register flights
   for (var j = 0; j < flights.length; j++) {
     let flight = flights[j];
-    flightSuretyData.methods.getFlight(flight['flight']).call().then((result) => {
-      // if flight is not registered then register
-      if (!result['_isRegistered']) {
-        flightSuretyApp.methods.registerFlight(flight['flight'], flight['timestamp'])
-        .send({from:accounts[1],gasLimit: "4600000"})
-        .catch((err) => {
-          console.log(err);
-        })
-      }
-    })
-    .catch((err) => {
-      console.log('getflight');
-      console.log(err)
-    });
-  
+      flightSuretyApp.methods.registerFlight(flight['flight'], flight['timestamp'])
+      .send({from:accounts[1],gasLimit: "4600000"})
+      .catch((err) => {
+        console.log(err);
+      })
   }
 });
 
@@ -197,18 +161,19 @@ web3.eth.getBlockNumber().then((blockNumber) => {
     fromBlock: 0
   }, function (error, event) {
     if (error) console.log(error)
+
+    console.log("Processing Oracle Request");
     let flight = event['returnValues']['flight'];
     let index = event['returnValues']['index'];
     let airline = event['returnValues']['airline'];
     for (var i = 0; i < oracles.length; i++) {
-      oracles[i].generateFlightInfo(index, airline, flight);
+      oracles[i].generateFlightInfo(index, airline, flight, flights);
     }
     
   });
 })
 
-
-
+// Express route
 const app = express();
 app.use(cors());
 app.get('/api', (req, res) => {

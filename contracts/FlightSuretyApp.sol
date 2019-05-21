@@ -203,7 +203,8 @@ contract FlightSuretyApp {
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
         oracleResponses[key] = ResponseInfo({
                                                 requester: msg.sender,
-                                                isOpen: true
+                                                isOpen: true,
+                                                isValid: true
                                             });
 
         emit OracleRequest(index, airline, flight, timestamp);
@@ -232,6 +233,7 @@ contract FlightSuretyApp {
 
     // Model for responses from oracles
     struct ResponseInfo {
+        bool isValid;                                   // to identify whether key is valid
         address requester;                              // Account that requested status
         bool isOpen;                                    // If open, oracle responses are accepted
         mapping(uint8 => address[]) responses;          // Mapping key is the status code reported
@@ -299,7 +301,7 @@ contract FlightSuretyApp {
 
 
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp)); 
-        require(oracleResponses[key].isOpen, "Flight or timestamp do not match oracle request");
+        require(oracleResponses[key].isValid, "Flight or timestamp do not match oracle request");
 
         oracleResponses[key].responses[statusCode].push(msg.sender);
 
@@ -308,13 +310,15 @@ contract FlightSuretyApp {
         emit OracleReport(airline, flight, timestamp, statusCode);
         if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
 
-            emit FlightStatusInfo(airline, flight, timestamp, statusCode);
-
+            if (oracleResponses[key].isOpen) {
+                emit FlightStatusInfo(airline, flight, timestamp, statusCode);
+                // Handle flight status as appropriate
+                processFlightStatus(airline, flight, timestamp, statusCode);
+            }
             // mark the flight request as closed when number of responses are met
             oracleResponses[key].isOpen = false;
 
-            // Handle flight status as appropriate
-            processFlightStatus(airline, flight, timestamp, statusCode);
+            
         }
     }
 
