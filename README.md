@@ -41,7 +41,7 @@ To install, download or clone the repo, then:
 
 1. run `ganache`. by default, the server will assume ganache is running on `port 8545`
 
-2. change the first airline address inside `2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick the first account)
+2. change the first airline address inside `2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick the second account)
 
 3. deploy into ganache
 
