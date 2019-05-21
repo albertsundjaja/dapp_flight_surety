@@ -3,7 +3,7 @@
 ## Project Overview
 
 1. Flight Surety is a project to manage collaboration between multiple airlines for flight delay insurance.
-2. Passengers can purchase insurance prior to flight. If flight is delayed, passengers are paid 1.5x the amount they paid for the insurance.
+2. Passengers can purchase insurance prior to flight. If flight is delayed because of airline fault, passengers are paid 1.5x the amount they paid for the insurance.
 3. By checking the flight status provided by Oracles, the smart contract can decide to give payout if the flight is delayed. The payout is credited automatically to the passenger's Ethereum wallet mapping in the contract, passenger can then withdraw from it.
 4. The project will be separated into 4 main parts. The smart contract for data, smart contract for app logic, the front-end dapp client, and an oracle server.
 
@@ -33,47 +33,27 @@ To install, download or clone the repo, then:
 
 1. run `ganache`. by default, the server will assume ganache is running on `port 8545`
 
+2. change the first airline address inside `2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick the first account)
 
-`truffle compile`
+3. deploy into ganache
 
-1. change the first airline address `inside 2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick one of the accounts)
+`truffle migrate --reset`
 
-## Develop Client
+**note** everytime you redeploy, remember to delete the `build` folder to avoid conflict
+
+4. run the server, and wait until oracle registration completed
+
+`npm run server`
+
+5. run the dapp, it can then be viewed using your browser at `http://localhost:8000`
+
+`npm run dapp`
+
+6. Flights are hardcoded. Flight with flight number `ABC123` is the one who is set to be Late Airline fault. Insurance will be credited towards the passenger. To test out the insurance payout, buy insurance for this flight, and then click `Submit to Oracle (fetch flight status)`. Then click withdraw to get the payouts, you can check that the balance in ganace, it should increase by 1.5x the original insurance.
+
+## Testing
 
 To run truffle tests:
 
 `truffle test ./test/flightSurety.js`
 `truffle test ./test/oracles.js`
-
-To use the dapp:
-
-`truffle migrate`
-`npm run dapp`
-
-To view dapp:
-
-`http://localhost:8000`
-
-## Develop Server
-
-`npm run server`
-`truffle test ./test/oracles.js`
-
-## Deploy
-
-To build dapp for prod:
-`npm run dapp:prod`
-
-Deploy the contents of the ./dapp folder
-
-
-## Resources
-
-* [How does Ethereum work anyway?](https://medium.com/@preethikasireddy/how-does-ethereum-work-anyway-22d1df506369)
-* [BIP39 Mnemonic Generator](https://iancoleman.io/bip39/)
-* [Truffle Framework](http://truffleframework.com/)
-* [Ganache Local Blockchain](http://truffleframework.com/ganache/)
-* [Remix Solidity IDE](https://remix.ethereum.org/)
-* [Solidity Language Reference](http://solidity.readthedocs.io/en/v0.4.24/)
-* [Ethereum Blockchain Explorer](https://etherscan.io/)
-* [Web3Js Reference](https://github.com/ethereum/wiki/wiki/JavaScript-API)
