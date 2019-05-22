@@ -40,7 +40,7 @@ To install, download or clone the repo, then install dependency:
 $ npm install
 ```
 
-1. run `ganache`. by default, the server will assume ganache is running on `port 8545`
+1. run `ganache`. by default, the server will assume ganache is running on `port 8545`. make sure there are at least 20 accounts in ganache.
 
 2. change the first airline address inside `2_deploy_contracts.js` to your first desired airline address (if you are using ganache, pick the second account)
 
