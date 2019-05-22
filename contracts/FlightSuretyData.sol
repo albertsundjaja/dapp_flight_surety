@@ -293,7 +293,7 @@ contract FlightSuretyData {
      *  @dev Credits payouts to insuree
      * WARNING there is a for loop in this function
     */
-    function creditInsurees(string calldata _flightNumber) external requireRegisteredContract 
+    function creditInsurees(string calldata _flightNumber, uint16 _payoutRatio) external requireRegisteredContract 
     requireIsOperational {
         address[] memory addresses = flights[_flightNumber].addressList;
         flights[_flightNumber].active = false;
@@ -302,7 +302,7 @@ contract FlightSuretyData {
             uint insuranceAmount = passengers[addresses[i]].insuranceBought[_flightNumber];
             // empty out the insurance for this passenger
             passengers[addresses[i]].insuranceBought[_flightNumber] = 0;
-            payouts[addresses[i]] += insuranceAmount.mul(15).div(10);
+            payouts[addresses[i]] += insuranceAmount.mul(_payoutRatio).div(10);
         }
     }
     

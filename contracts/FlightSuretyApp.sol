@@ -28,8 +28,12 @@ contract FlightSuretyApp {
 
     // Constants
     uint8 private constant MIN_AIRLINE_TO_ACTIVATE_CONSENSUS = 4;
+    // ante required for airline to be active
     uint256 private constant ANTE_AMOUNT = 10 ether;
+    // maximum amount of insurance that passenger can buy
     uint256 private constant MAX_INSURANCE = 1 ether;
+    // the payout ratio given if airline is late (note that this will be divided by 10)
+    uint16 private constant PAYOUT_RATIO = 15;
 
     address private contractOwner;          // Account used to deploy contract
 
@@ -205,7 +209,8 @@ contract FlightSuretyApp {
     function processFlightStatus (address airline, string memory flight,
                                     uint256 timestamp, uint8 statusCode) internal {
         if (statusCode == STATUS_CODE_LATE_AIRLINE) {
-            dataContract.creditInsurees(flight);
+            // note that PAYOUT_RATIO will be divided by 10
+            dataContract.creditInsurees(flight, PAYOUT_RATIO);
         }
     }
 
@@ -404,7 +409,7 @@ contract FlightSuretyData {
     function updateAirlineStatusToRegistered(address _airlineAddress) external {}
     function getAirlineStatus(address _airlineAddress) external view returns (uint _status) {}
     function registerFlight(string calldata _flightNumber, address _airline, uint256 _timestamp) external {}
-    function creditInsurees(string calldata _flightNumber) external {}
+    function creditInsurees(string calldata _flightNumber, uint16 payoutRatio) external {}
     function buy(string calldata _flightNumber, address _buyerAddress) external payable {}
     function payAnte(address _airlineAddress) external payable {}
     function fund() external payable {}
