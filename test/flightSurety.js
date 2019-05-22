@@ -204,8 +204,8 @@ contract('Flight Surety Tests', async (accounts) => {
   it('allows passenger to buy insurance', async () => {
     let passenger = accounts[6];
     const flightNumber = "Test123";
-    await config.flightSuretyData.buy(flightNumber, {from:passenger, value:1000});
-    let result = await config.flightSuretyData.checkInsurance(flightNumber, {from:passenger});
+    await config.flightSuretyApp.buyInsurance(flightNumber, {from:passenger, value:1000});
+    let result = await config.flightSuretyData.checkInsurance(flightNumber, passenger, {from:passenger});
     assert(result, 1000, "Insurance bought must be equal to 1000 in value");
   });
 

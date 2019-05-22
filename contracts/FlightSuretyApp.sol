@@ -29,6 +29,7 @@ contract FlightSuretyApp {
     // Constants
     uint8 private constant MIN_AIRLINE_TO_ACTIVATE_CONSENSUS = 4;
     uint256 private constant ANTE_AMOUNT = 10 ether;
+    uint256 private constant MAX_INSURANCE = 1 ether;
 
     address private contractOwner;          // Account used to deploy contract
 
@@ -99,13 +100,16 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-    /*
+    
     function buyInsurance(string memory _flight) public payable {
         require (msg.value > 0, "Amount must be greater than zero");
-        require (msg.value <= 1 ether, "Amount must not exceed 1 ether");
-
+        require (msg.value <= MAX_INSURANCE, "Amount must not exceed 1 ether");
+        (bool active, bool unused, address unused2, uint256 unused3) = dataContract.getFlight(_flight);
+        require (active == true, "Flight is not currently active");
+        uint256 insuranceBought = dataContract.checkInsurance(_flight, msg.sender);
+        require (insuranceBought == 0, "You have bought an insurance for this flight");
         dataContract.buy.value(msg.value)(_flight, msg.sender);
-    } */
+    } 
   
    /**
     * @dev Add an airline to the registration queue
@@ -179,8 +183,6 @@ contract FlightSuretyApp {
         require(msg.value == ANTE_AMOUNT, "Ante paid must be equal to 10 ether");
         dataContract.payAnte.value(ANTE_AMOUNT)(msg.sender);
     }
-
-
 
    /**
     * @dev Register a future flight for insuring.
@@ -407,4 +409,7 @@ contract FlightSuretyData {
     function buy(string calldata _flightNumber, address _buyerAddress) external payable {}
     function payAnte(address _airlineAddress) external payable {}
     function fund() external payable {}
+    function getFlight(string memory _flightNumber) public view returns(bool _active,
+         bool _isRegistered, address _airline, uint256 _timestamp) {}
+    function checkInsurance(string memory _flightNumber, address _passengerAddress) public view returns(uint256 _amount) {}
 }

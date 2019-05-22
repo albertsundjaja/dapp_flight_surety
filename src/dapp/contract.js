@@ -54,9 +54,8 @@ export default class Contract {
 
     buyInsurance(flight, amount, callback) {
         let self = this;
-        let amountInt = parseInt(amount);
-        self.flightSuretyData.methods.buy(flight)
-            .send({from:self.owner, value:amountInt, gasLimit: "4600000"})
+        self.flightSuretyApp.methods.buyInsurance(flight)
+            .send({from:self.owner, value: self.web3.utils.toWei(amount, "ether"), gasLimit: "4600000"})
             .then((res) => {
                 callback(null, "Insurance bought")
             })
@@ -68,7 +67,7 @@ export default class Contract {
 
     withdraw(callback) {
         let self = this;
-        self.flightSuretyData.methods.checkInsurance('ABC123').call({from:self.owner})
+        self.flightSuretyData.methods.checkInsurance('ABC123', self.owner).call({from:self.owner})
         .then((res) => {
             console.log(res);
         })

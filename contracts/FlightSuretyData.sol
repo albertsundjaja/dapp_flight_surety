@@ -262,24 +262,23 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy(string calldata _flightNumber) external payable requireIsOperational {
+    function buy(string calldata _flightNumber, address _buyerAddress) external payable requireIsOperational {
         require (flights[_flightNumber].active == true, "Flight is not currently active");
         require (msg.value > 0, "Amount must be greater than zero");
-        require (msg.value <= 1 ether, "Amount must not exceed 1 ether");
-        require (passengers[msg.sender].insuranceBought[_flightNumber] == 0, "You have bought an insurance for this flight");
+        require (passengers[_buyerAddress].insuranceBought[_flightNumber] == 0, "You have bought an insurance for this flight");
 
         // add into flight number list of passenger who bought insurance
-        flights[_flightNumber].addressList.push(msg.sender);
+        flights[_flightNumber].addressList.push(_buyerAddress);
         // update this passenger insurance bought
-        passengers[msg.sender].insuranceBought[_flightNumber] = msg.value;
+        passengers[_buyerAddress].insuranceBought[_flightNumber] = msg.value;
     }
 
      /**
     * @dev Check insurance detail
     *
     */   
-    function checkInsurance(string memory _flightNumber) public view returns(uint256 _amount) {
-        return passengers[msg.sender].insuranceBought[_flightNumber];
+    function checkInsurance(string memory _flightNumber, address _passengerAddress) public view returns(uint256 _amount) {
+        return passengers[_passengerAddress].insuranceBought[_flightNumber];
     }
 
     /**

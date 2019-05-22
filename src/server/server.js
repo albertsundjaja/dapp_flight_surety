@@ -126,7 +126,7 @@ web3.eth.getAccounts().then(async (accounts) => {
   // pay ante for first airline, so that it is active
   await flightSuretyData.methods.isAirlineActive(accounts[1]).call().then(async (active) => {
     if (!active) {
-      await flightSuretyData.methods.payAnte().send({from:accounts[1], value: 10 * weiMultiple}).catch((err) => {
+      await flightSuretyApp.methods.payAnte().send({from:accounts[1], value: 10 * weiMultiple}).catch((err) => {
         console.log(err);
       });
     }
