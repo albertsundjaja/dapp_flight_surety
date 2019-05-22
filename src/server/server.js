@@ -95,7 +95,7 @@ web3.eth.getAccounts().then(async (accounts) => {
   for (var i = 0; i < 20; i++) {
     let account = accounts[i];
     flightSuretyApp.methods.getMyIndexes().call({from:account}).then((indices) =>{
-      console.log("Initializing oracle ", account);
+      console.log("Initializing oracle ", account, " indices: ", indices);
       let newOracle = new Oracle(account);
       newOracle.state.indices = indices;
       oracles.push(newOracle);
@@ -105,7 +105,7 @@ web3.eth.getAccounts().then(async (accounts) => {
       flightSuretyApp.methods.registerOracle().send({from:account,value:1*weiMultiple,gasLimit: "4600000"}).then(
         (result)=>{
             flightSuretyApp.methods.getMyIndexes().call({from:account}).then((indices) =>{
-                console.log("Registering oracle ", account);
+                console.log("Registering oracle ", account, " indices: ", indices);
                 let newOracle = new Oracle(account);
                 newOracle.state.indices = indices;
                 oracles.push(newOracle);
