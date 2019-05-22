@@ -101,7 +101,7 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     
-    function buyInsurance(string memory _flight) public payable {
+    function buyInsurance(string memory _flight) public payable requireIsOperational {
         require (msg.value > 0, "Amount must be greater than zero");
         require (msg.value <= MAX_INSURANCE, "Amount must not exceed 1 ether");
         (bool active, bool unused, address unused2, uint256 unused3) = dataContract.getFlight(_flight);
@@ -116,7 +116,8 @@ contract FlightSuretyApp {
     * For the first 4 airlines, it will be automatically registered
     * For the subsequent airline, it will need a 50% consensus
     */
-    function registerAirline(address _airlineAddress, string calldata _airlineName) external returns(bool _success, uint256 _votes)
+    function registerAirline(address _airlineAddress, string calldata _airlineName) external 
+    requireIsOperational returns(bool _success, uint256 _votes)
     {
         require(dataContract.isAirlineActive(msg.sender) == true,
          "You are not yet activated");
@@ -188,7 +189,8 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */
-    function registerFlight(string calldata _flightNumber, uint256 _timestamp) external {
+    function registerFlight(string calldata _flightNumber, uint256 _timestamp) external
+    requireIsOperational {
         // check if the caller is one of the registered airline
         bool isCallerRegistered = dataContract.isAirlineActive(msg.sender);
         require (isCallerRegistered == true, "You are not active");
@@ -209,7 +211,8 @@ contract FlightSuretyApp {
 
 
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus(address airline, string calldata flight,uint256 timestamp) external {
+    function fetchFlightStatus(address airline, string calldata flight,uint256 timestamp) external
+    requireIsOperational {
         uint8 index = getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
@@ -270,11 +273,7 @@ contract FlightSuretyApp {
 
 
     // Register an oracle with the contract
-    function registerOracle
-                            (
-                            )
-                            external
-                            payable
+    function registerOracle() external payable requireIsOperational
     {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
@@ -308,7 +307,7 @@ contract FlightSuretyApp {
                             uint256 timestamp,
                             uint8 statusCode
                         )
-                        external
+                        external requireIsOperational
     {
         require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
 
