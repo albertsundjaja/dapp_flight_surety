@@ -28,6 +28,7 @@ contract FlightSuretyApp {
 
     // Constants
     uint8 private constant MIN_AIRLINE_TO_ACTIVATE_CONSENSUS = 4;
+    uint256 private constant ANTE_AMOUNT = 10 ether;
 
     address private contractOwner;          // Account used to deploy contract
 
@@ -169,6 +170,16 @@ contract FlightSuretyApp {
             numberOfRequiredConsensus = quotient;
         }
     }
+
+    /**
+    * @dev Pay ante to activate airline, note that the fund will be send to data contract
+    * data contract require an already registered airline to pay ante
+    */
+    function payAnte() public payable requireIsOperational {
+        require(msg.value == ANTE_AMOUNT, "Ante paid must be equal to 10 ether");
+        dataContract.payAnte.value(ANTE_AMOUNT)(msg.sender);
+    }
+
 
 
    /**
@@ -394,4 +405,6 @@ contract FlightSuretyData {
     function registerFlight(string calldata _flightNumber, address _airline, uint256 _timestamp) external {}
     function creditInsurees(string calldata _flightNumber) external {}
     function buy(string calldata _flightNumber, address _buyerAddress) external payable {}
+    function payAnte(address _airlineAddress) external payable {}
+    function fund() external payable {}
 }

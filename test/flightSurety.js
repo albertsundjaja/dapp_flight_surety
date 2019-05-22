@@ -11,7 +11,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // first airline should pay ante to activate
     //await config.flightSuretyApp.registerAirline(config.firstAirline, "First Airline", {from:config.owner});
-    await config.flightSuretyData.payAnte({from:config.firstAirline,value:10 * config.weiMultiple});
+    await config.flightSuretyApp.payAnte({from:config.firstAirline,value:10 * config.weiMultiple});
   });
 
   /****************************************************************************************/
@@ -102,7 +102,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     let err = null;
     try {
-        await config.flightSuretyData.payAnte({from:caller, value:1});
+        await config.flightSuretyApp.payAnte({from:caller, value:1});
     }
     catch (e) {
         //console.log(e);
@@ -112,7 +112,7 @@ contract('Flight Surety Tests', async (accounts) => {
 
     err = null;
     try {
-        await config.flightSuretyData.payAnte({from:caller, value:20* config.weiMultiple});
+        await config.flightSuretyApp.payAnte({from:caller, value:20* config.weiMultiple});
     }
     catch (e) {
         //console.log(e);
@@ -141,10 +141,16 @@ contract('Flight Surety Tests', async (accounts) => {
 
   });
 
-  it('require multiparty consensus when number of registered airline is >= 4', async () => {
-
+  it('can pay ante to activate airline', async () => {
+    let notPaidAirline = accounts[2];
     // pay the second airline for ante
-    await config.flightSuretyData.payAnte({from:accounts[2],value:10 * config.weiMultiple});
+    await config.flightSuretyApp.payAnte({from:notPaidAirline,value:10 * config.weiMultiple});
+    let result = await config.flightSuretyData.isAirlineActive.call(notPaidAirline);
+    assert.equal(result, true, "Paying ante should activate airline");
+
+  });
+
+  it('require multiparty consensus when number of registered airline is >= 4', async () => {
     
     let newAirline3 = accounts[3];
     let newAirline4 = accounts[4];
@@ -152,8 +158,8 @@ contract('Flight Surety Tests', async (accounts) => {
     // register and pay for third and fourth airline
     await config.flightSuretyApp.registerAirline(newAirline3, "Test Airline 3", {from: config.firstAirline});
     await config.flightSuretyApp.registerAirline(newAirline4, "Test Airline 4", {from: config.firstAirline});
-    await config.flightSuretyData.payAnte({from:newAirline3,value:10 * config.weiMultiple});
-    await config.flightSuretyData.payAnte({from:newAirline4,value:10 * config.weiMultiple});
+    await config.flightSuretyApp.payAnte({from:newAirline3,value:10 * config.weiMultiple});
+    await config.flightSuretyApp.payAnte({from:newAirline4,value:10 * config.weiMultiple});
     
     let newAirline5 = accounts[5];
     await config.flightSuretyApp.registerAirline(newAirline5, "Test Airline 5", {from: config.firstAirline});

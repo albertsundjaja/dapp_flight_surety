@@ -155,7 +155,8 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */   
-    function registerAirline(address _airlineAddress, string calldata _airlineName) external requireRegisteredContract {
+    function registerAirline(address _airlineAddress, string calldata _airlineName) external requireRegisteredContract 
+    requireIsOperational {
         AirlineInfo memory info;
         info.name = _airlineName;
         info.status = AirlineStatus.WaitingConsensus;
@@ -168,19 +169,20 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function updateAirlineStatusToRegistered(address _airlineAddress) external requireRegisteredContract {
+    function updateAirlineStatusToRegistered(address _airlineAddress) external requireRegisteredContract 
+    requireIsOperational {
         airlines[_airlineAddress].status = AirlineStatus.Registered;
         numberOfRegisteredAirline += 1;
     }
 
     /**
-    * @dev Pay ante to be activated
+    * @dev Airline has paid ante, activate
     */
-    function payAnte() public payable {
-        require(airlines[msg.sender].status == AirlineStatus.Registered, "Airline is not yet registered or already paid");
-        require(msg.value == 10 ether, "Ante should be 10 ether");
+    function payAnte(address _airlineAddress) external payable requireRegisteredContract 
+    requireIsOperational {
+        require(airlines[_airlineAddress].status == AirlineStatus.Registered, "Airline is not yet registered");
         // change status of the airline to active
-        airlines[msg.sender].status = AirlineStatus.Active;
+        airlines[_airlineAddress].status = AirlineStatus.Active;
     }
 
     /**
@@ -232,7 +234,8 @@ contract FlightSuretyData {
     *
     */
     function registerFlight(string calldata _flightNumber,
-                            address _airline, uint256 _timestamp) external requireRegisteredContract {
+                            address _airline, uint256 _timestamp) external requireRegisteredContract 
+                            requireIsOperational {
 
         require(flights[_flightNumber].isRegistered == false, "Flight is already registered");
 
@@ -259,7 +262,7 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy(string calldata _flightNumber) external payable {
+    function buy(string calldata _flightNumber) external payable requireIsOperational {
         require (flights[_flightNumber].active == true, "Flight is not currently active");
         require (msg.value > 0, "Amount must be greater than zero");
         require (msg.value <= 1 ether, "Amount must not exceed 1 ether");
@@ -291,7 +294,8 @@ contract FlightSuretyData {
      *  @dev Credits payouts to insuree
      * WARNING there is a for loop in this function
     */
-    function creditInsurees(string calldata _flightNumber) external requireRegisteredContract {
+    function creditInsurees(string calldata _flightNumber) external requireRegisteredContract 
+    requireIsOperational {
         address[] memory addresses = flights[_flightNumber].addressList;
         flights[_flightNumber].active = false;
 
@@ -308,7 +312,7 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay() external {
+    function pay() external requireIsOperational {
         require(payouts[msg.sender] > 0, "Balance is zero");
         uint amount = payouts[msg.sender];
         payouts[msg.sender] = 0;
